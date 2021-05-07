@@ -1,0 +1,38 @@
+--------------entity-cell-------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+entity cell1 is
+  port(a,b,clk: IN std_logic;
+       q,c: INOUT std_logic:='0');
+end cell1;
+architecture cell of cell1 is
+begin
+process(clk)
+begin
+ IF clk'event AND clk='1' THEN
+   q<=(a AND b) XOR q;
+   c<=a AND b;
+ END IF;
+END process;
+end architecture cell;
+---------------entity-main------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity counter is
+  Port( clk: IN std_logic:='0';
+        outputs: OUT std_logic_vector(2 downto 0) );
+end counter;
+
+architecture Behavioral of counter is
+component cell1 is
+port(a,b,clk: IN std_logic;
+       q,c: INOUT std_logic:='0');
+end component;
+signal a,b: std_logic_vector(3 downto 0):=(0=>'1', others=>'0');
+begin
+cell_1: cell1 port map(a=>a(0),b=>b(0),clk=>clk,q=>a(1),c=>b(1));
+cell_2: cell1 port map(a=>a(1),b=>b(1),clk=>clk,q=>a(2),c=>b(2));
+cell_3: cell1 port map(a=>a(2),b=>b(2),clk=>clk,q=>a(3),c=>b(3));
+outputs<=a(2 downto 0);
+end Behavioral;

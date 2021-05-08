@@ -1,0 +1,46 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+
+entity FSM_machine is
+ Port (clk,reset: IN std_logic:='0';
+       input: IN character;
+       output: OUT std_logic:='0' );
+end FSM_machine;
+
+architecture Behavioral of FSM_machine is
+type intarr is array(1 downto 0) of INTEGER;
+signal status: intarr:=(0=>0,1=>0);
+begin
+states:process(clk,reset)
+begin
+if(input='V') then
+  status(0)<=status(1);
+  status(1)<=1;
+elsif (input ='H' AND status(1)=1) then
+  status(0)<=status(1);
+  status(1)<=2;
+elsif (input ='D' AND status(1)=2) then
+  status(0)<=status(1);
+  status(1)<=3;
+elsif (input ='L' AND status(1)=3) then
+  status(0)<=status(1);
+  status(1)<=4;
+elsif (reset='1') then
+  status(0)<=0;
+  status(1)<=0;
+else
+  status(0)<=0;
+  status(1)<=0;
+END if;
+END process;
+
+outputs:process(clk,reset)
+begin
+if(status(1)=4) THEN
+   output<='1';
+else
+   output<='0';
+END if;
+END process;
+end Behavioral;

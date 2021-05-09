@@ -1,0 +1,85 @@
+------------------------------------------------------------------------------------------------------
+--This is a Push_button_sequence detector
+--the machine has 3 push buttons and they must be presses in the right sequence to get the output(led_ON) to high'1'
+--from the state diagram, the machine has 3 states
+--the machine must statisfy two extra conditions
+----1. if  the time between two consecutive inputs is 4 or more clk pulses then the system must reset(state s1)
+----2. A mechanism has to be set up to prevent bypassing of states
+------------------------------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity push_button_sequence is
+Port ( pb: IN std_logic_vector(0 to 1):="00";
+       clk: IN std_logic;---1 Hz clock
+       reset: IN std_logic:='0';
+       led_ON: OUT std_logic:='0';
+       led_idle: OUT std_logic:='1'
+    
+     );
+end push_button_sequence;
+
+architecture Behavioral of push_button_sequence is
+signal count: INTEGER :=0;
+signal flag,timer,res: std_logic:='0';
+type state is(s1,s2,s3);
+signal c_state: state:=s1;
+begin  
+counter:process(clk)------------------------------------to measure clk pulses between two inputs
+        begin                                         --if there are 4 or more clk pulses between two consecuitve inputs then the system must reset  
+        if(clk='1' AND flag /='1') then 
+        count<=count+1;
+        end if;
+        if(count>=5 OR timer='1') then
+        count<=0;
+        end if;
+        end process;
+
+flags: process(clk)-----------------------------------the flag will be set to high '1' if a user input lasts for more than 1 clk pulse
+       begin                                        --this flag is needed to prevent bypass of states in this FSM
+       if(pb="00") then
+          flag<='0';
+         else
+          flag<='1';
+       end if;
+       end process;
+pushbuttons:process(clk)
+            begin
+            timer<='0';
+            if(clk='1' AND pb/="00") then
+            
+            case c_state is
+            when s1=> if(pb="01" AND count<=3) then
+                        c_state<=s2;
+                      else
+                        c_state<=s1;
+                      end if;
+                      timer<='1';
+                      led_ON<='0';
+                      led_idle<='1';
+            when s2=> if(pb="10" AND count<=3) then
+                        c_state<=s3;
+                      elsif(pb="01" AND count<=3) then
+                        c_state<=s2;
+                      else
+                        c_state<=s1;
+                      end if;
+                      timer<='1';
+                      led_ON<='0';
+                      led_idle<='1';
+           when s3=> if(pb="11" AND count<=3) then
+                        c_state<=s1;
+                        led_ON<='1';
+                        led_idle<='0';
+                      elsif(pb="01" AND count<=3) then
+                        c_state<=s2;
+                      elsif (pb="10" AND flag='1') then
+                        c_state<=s3;
+                      else
+                        c_state<=s1;
+                      end if;
+                      timer<='1';
+            end case;
+            end if;
+            end process;
+end Behavioral;

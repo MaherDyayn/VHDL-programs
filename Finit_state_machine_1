@@ -1,0 +1,59 @@
+-------------------------QUESTION---------------
+--to make a finite state machine with states A and B that:
+--starts from A
+--goes to B if x='1' for more than T1 seconds and 
+--goes back to A from B if it stays in B for more than T2 seconds
+--------------------------------------------------
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity FSM_1 is
+ GENERIC( T1:integer:=2;
+          T2:integer:=5);
+ Port (x,clk: IN std_logic:='0';
+       count: INOUT integer:=0;
+       states: OUT std_logic_vector(1 downto 0)  );
+end FSM_1;
+
+architecture Behavioral of FSM_1 is
+TYPE c_state is(A,B);
+SIGNAL state:c_state:=A;
+--SIGNAL count:integer:=0;
+SIGNAL timer:std_logic:='0';
+begin
+clock:process(clk)--------------------------general clock needed, 10E8 HZ
+      begin
+      if(clk='1') then
+         count<=count+1;
+      end if;
+      if(timer='1') then -------------------the timer signal is needed to notify when to reset count
+         count<=0;                        --a seperate signal timer is needed because process 'n_state' cannot edit count as we cant have count updated in parallel
+      end if;
+      end process;
+n_state:process(clk)
+        begin
+        timer<='0';
+        if(clk'event AND clk='1') then
+        case state IS
+        when A=>if(x='1' AND count>=T1) then
+                   state<=B;
+                   states<="10";
+                else
+                   state<=A;
+                   states<="01";
+                end if;
+                if(count>=T1) then
+                   timer<='1';
+                end if;
+        when B=>if(count>=T2) then
+                   state<=A;
+                   states<="01";
+                   timer<='1';
+                end if;
+                
+        end case;
+        end if;
+        end process;
+
+end Behavioral;

@@ -1,0 +1,65 @@
+----------------------------------------------------------------------------------
+--This is an application for a circuit capable of interfacing using the I2C bus with a temperature sensor. 
+--The device can be, for example, LM75A, from NXP
+--------------------main-------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity I2C_tempsensor is
+GENERIC(size:integer:=8; --change this size to size of you data
+        address:std_logic_vector(6 downto 0):="1001000"); -- change last 3 bits of address to that of your temp sensor
+ Port (SCL,SDA,clk: INOUT std_logic;--clk is a clock provided to this device but SCL is the clock that it sends to the temp sensor
+       Vs:IN std_logic:='1';        --clk has double the frequency that of SCL
+       Gnd:IN std_logic:='0';
+       temp_data:INOUT std_logic_vector(7 downto 0);
+       read: IN std_logic:='1' );
+end I2C_tempsensor;
+
+architecture Behavioral of I2C_tempsensor is
+type states is (off,idle,r,w,read_ack);
+SIGNAL count: integer:=0;
+SIGNAL i: integer RANGE 0 to 7:=0;
+SIGNAL j: integer RANGE 0 to 6:=0;
+SIGNAL state:states:=off;
+begin
+        
+clock:process(clk)
+      begin
+      count<=count+1;
+      if(count>=3) then
+         count<=0;
+      end if;
+      end process;
+data:process(SCL,clk)
+     begin
+     if(state=off AND count=1) then
+           SDA<='0';
+           state<=idle;
+     end if;
+     if(state=idle AND SCL='0' AND clk='1' AND count=3) then --the count==3 condition ensures that data is sent from master through SDA
+        SDA<=address(6-j);                                   --only when the SCL is low
+        if(j=6) then
+           SDA<=read;
+           state<=r;
+        j<=j+1;
+        end if;
+     end if;
+     if(state=r AND SDA='0') then
+        state<=read_ack;
+     end if;
+     if(state=read_ack AND SCL='1') then
+        temp_data(size-i)<=SDA;
+        i<=i+1;
+        if(i>=7 AND count=3) then
+           SDA<='0';                 --master acknowledges after every 8-bits recived
+        end if;
+        if(i>=size)then 
+          i<=0;
+          state<=off;
+          SDA<='1';                 --since all the data has been sent, the master does not acknowledge anymore
+        end if;                     --and the state goes to off
+     end if;
+     end process;
+
+
+end Behavioral;
